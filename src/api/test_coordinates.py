@@ -1,5 +1,6 @@
 import json
 
+import numpy as np
 from pydantic import ValidationError
 
 from dataloader import _get_coordinates_list, get_atel_dataset, RecordMetadata
@@ -30,4 +31,5 @@ with open(path, 'r') as f:
 
 print(count_broken, count_empty)
 print(list_broken)
+np.savetxt('../../dev-astrocolibri/empty_coordinates.txt', list_empty, fmt='%s')
 print(len(list_single_obj))
