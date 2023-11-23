@@ -40,8 +40,11 @@ def create_indices(dataset_name, indices_path):
             return json.load(f)
     with open(f"./data/{dataset_name}/dataset.json", 'r') as f:
         new_indices = list(json.load(f).keys())
-    with open(f"./data/{dataset_name}/entities.json", 'r') as f:
-        old_indices = list(json.load(f).keys())
+    try:
+        with open(f"./data/{dataset_name}/entities.json", 'r') as f:
+            old_indices = list(json.load(f).keys())
+    except FileNotFoundError:
+        old_indices = []
     # if os.path.isfile(f"./data/{dataset_name}/completions.json"):
     #     with open(f"./data/{dataset_name}_completions.json", 'r') as f:
     #         unfinished_indices = list(json.load(f).keys())

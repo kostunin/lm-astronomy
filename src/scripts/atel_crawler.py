@@ -1,8 +1,12 @@
+import os
+
 import requests
 from bs4 import BeautifulSoup
 import json
 from html2text import HTML2Text
 import csv
+
+import sys
 
 
 class ATelCrawler:
@@ -80,9 +84,11 @@ class ATelCrawler:
         xml = BeautifulSoup(response.text, 'html.parser')
         return int(xml.find('item').attrs['rdf:about'].rpartition('=')[2])
 
-    def crawl(self):
-        start_id = self.read_last_id()
-        end_id = self.get_max_id()
+    def crawl(self, start_id: int = None, end_id: int = None):
+        if start_id is None:
+            start_id = self.read_last_id()
+        if end_id is None:
+            end_id = self.get_max_id()
         for id in range(start_id, end_id + 1):
             print(id)
             rec = self._crawl_one(id)
@@ -90,18 +96,26 @@ class ATelCrawler:
             self.write_to_json(rec)
 
     def write_to_csv(self, rec):
-        with open('./data/atel/dataset.csv', 'a+') as f:
+        fmode = 'w'
+        datasetcsv = './data/atel/dataset.csv'
+        if os.path.isfile(datasetcsv):
+            fmode = 'a+'
+        with open(datasetcsv, fmode) as f:
             writer = csv.DictWriter(f, fieldnames=self.headers())
             writer.writeheader()
             writer.writerow(rec)
 
     def write_to_json(self, rec):
-        with open("./data/atel/dataset.json", 'r') as f:
-            dataset = json.load(f)
+        datasetjson = "./data/atel/dataset.json"
+        if os.path.isfile(datasetjson):
+            with open(datasetjson, 'r') as f:
+                dataset = json.load(f)
+        else:
+            dataset = {}
         dataset.update({rec["id"]: rec["description"]})
-        with open("./data/atel/dataset.json", 'w') as f:
+        with open(datasetjson, 'w') as f:
             json.dump(dataset, f, indent=2)
 
 
 if __name__ == '__main__':
-    ATelCrawler().crawl()
+    ATelCrawler().crawl(int(sys.argv[1]), int(sys.argv[2]))
