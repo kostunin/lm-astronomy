@@ -5,7 +5,7 @@ from typing import Optional
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator, ConfigDict, model_validator, ValidationError
 from scipy.spatial import KDTree
 
 
@@ -69,14 +69,41 @@ class ObjectType(str, Enum):
 
 
 class RecordMetadata(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     record_id: str
     object_name: Optional[list[str]] = []
     event_type: Optional[list[str]] = []
     object_type: Optional[list[str]] = []
     messenger_type: Optional[list[str]] = []
     coordinates: Optional[list[str]] = []
+    skycoord: Optional[list[SkyCoord]] = []
     coordinate_system: Optional[str]
     date: Optional[str]  # TODO: parse date
+
+    @model_validator(mode='after')
+    def convert_coordinates(self) -> 'RecordMetadata':
+        coord_list = []
+        coordinate_frame = "icrs"
+        if self.coordinates is None:
+            self.skycoord = []
+            return self
+        if self.coordinate_system:
+            if self.coordinate_system.lower() == "galactic":
+                coordinate_frame = 'galactic'
+            elif self.coordinate_system.lower() == "ecliptic":
+                coordinate_frame = 'geocentrictrueecliptic'
+            for el in self.coordinates:
+                try:
+                    if len(el.split(' ')) > 2:
+                        sc = SkyCoord(el, frame=coordinate_frame, unit=(u.hour, u.deg))
+                    else:
+                        sc = SkyCoord(el, frame=coordinate_frame, unit=(u.deg, u.deg))
+                    coord_list.append(sc)
+                except:
+                    raise ValueError(f'{el}')
+        self.skycoord = coord_list
+        return self
 
 
 class FilterParameters(BaseModel):
